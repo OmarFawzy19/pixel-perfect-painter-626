@@ -1,0 +1,45 @@
+// DEMO DATA — a small hand-written catalog using MovieLens movie IDs.
+// These are NOT outputs from the trained models.
+import type { Movie } from "./types";
+
+export const DEMO_CATALOG: Movie[] = [
+  { id: 318, title: "The Shawshank Redemption", year: 1994, genres: ["Crime", "Drama"], director: "Frank Darabont", cast: ["Tim Robbins", "Morgan Freeman"], overview: "Two imprisoned men bond over years, finding solace and redemption through acts of common decency." },
+  { id: 858, title: "The Godfather", year: 1972, genres: ["Crime", "Drama"], director: "Francis Ford Coppola", cast: ["Marlon Brando", "Al Pacino"], overview: "The aging patriarch of an organized crime dynasty transfers control to his reluctant son." },
+  { id: 296, title: "Pulp Fiction", year: 1994, genres: ["Comedy", "Crime", "Drama", "Thriller"], director: "Quentin Tarantino", cast: ["John Travolta", "Uma Thurman", "Samuel L. Jackson"], overview: "The lives of two mob hitmen, a boxer and a pair of diner bandits intertwine in tales of violence and redemption." },
+  { id: 2571, title: "The Matrix", year: 1999, genres: ["Action", "Sci-Fi", "Thriller"], director: "Lana & Lilly Wachowski", cast: ["Keanu Reeves", "Laurence Fishburne"], overview: "A hacker learns the true nature of his reality and his role in the war against its controllers." },
+  { id: 260, title: "Star Wars: Episode IV – A New Hope", year: 1977, genres: ["Action", "Adventure", "Sci-Fi"], director: "George Lucas", cast: ["Mark Hamill", "Harrison Ford", "Carrie Fisher"], overview: "A farm boy joins a rebellion to rescue a princess and defeat a planet-destroying battle station." },
+  { id: 593, title: "The Silence of the Lambs", year: 1991, genres: ["Crime", "Horror", "Thriller"], director: "Jonathan Demme", cast: ["Jodie Foster", "Anthony Hopkins"], overview: "A young FBI cadet seeks the help of an imprisoned cannibal to catch another serial killer." },
+  { id: 2959, title: "Fight Club", year: 1999, genres: ["Action", "Crime", "Drama", "Thriller"], director: "David Fincher", cast: ["Brad Pitt", "Edward Norton"], overview: "An insomniac office worker and a soap maker form an underground fight club that evolves into much more." },
+  { id: 356, title: "Forrest Gump", year: 1994, genres: ["Comedy", "Drama", "Romance", "War"], director: "Robert Zemeckis", cast: ["Tom Hanks", "Robin Wright"], overview: "A kind man with a low IQ witnesses and influences several defining moments of American history." },
+  { id: 79132, title: "Inception", year: 2010, genres: ["Action", "Crime", "Drama", "Mystery", "Sci-Fi", "Thriller"], director: "Christopher Nolan", cast: ["Leonardo DiCaprio", "Joseph Gordon-Levitt"], overview: "A thief who steals secrets through dream-sharing is tasked with planting an idea instead." },
+  { id: 58559, title: "The Dark Knight", year: 2008, genres: ["Action", "Crime", "Drama", "IMAX"], director: "Christopher Nolan", cast: ["Christian Bale", "Heath Ledger"], overview: "Batman faces the Joker, a criminal mastermind who plunges Gotham into anarchy." },
+  { id: 109487, title: "Interstellar", year: 2014, genres: ["Sci-Fi", "IMAX"], director: "Christopher Nolan", cast: ["Matthew McConaughey", "Anne Hathaway"], overview: "Explorers travel through a wormhole in search of a new home for humanity." },
+  { id: 4993, title: "The Lord of the Rings: The Fellowship of the Ring", year: 2001, genres: ["Adventure", "Fantasy"], director: "Peter Jackson", cast: ["Elijah Wood", "Ian McKellen"], overview: "A hobbit sets out with eight companions to destroy a powerful ring." },
+  { id: 1, title: "Toy Story", year: 1995, genres: ["Adventure", "Animation", "Children", "Comedy", "Fantasy"], director: "John Lasseter", cast: ["Tom Hanks", "Tim Allen"], overview: "A cowboy doll feels threatened when a new spaceman figure becomes the top toy." },
+  { id: 4306, title: "Shrek", year: 2001, genres: ["Adventure", "Animation", "Children", "Comedy", "Fantasy", "Romance"], director: "Andrew Adamson", cast: ["Mike Myers", "Eddie Murphy"], overview: "An ogre's swamp is overrun by fairy-tale creatures, sending him on a quest to rescue a princess." },
+  { id: 6377, title: "Finding Nemo", year: 2003, genres: ["Adventure", "Animation", "Children", "Comedy"], director: "Andrew Stanton", cast: ["Albert Brooks", "Ellen DeGeneres"], overview: "A timid clownfish crosses the ocean to find his captured son." },
+  { id: 5618, title: "Spirited Away", year: 2001, genres: ["Adventure", "Animation", "Fantasy"], director: "Hayao Miyazaki", cast: ["Rumi Hiiragi", "Miyu Irino"], overview: "A girl wanders into a world of spirits and must work in a bathhouse to free her parents." },
+  { id: 1196, title: "The Empire Strikes Back", year: 1980, genres: ["Action", "Adventure", "Sci-Fi"], director: "Irvin Kershner", cast: ["Mark Hamill", "Harrison Ford"], overview: "The Rebels scatter after an Imperial attack while Luke trains with Jedi Master Yoda." },
+  { id: 1198, title: "Raiders of the Lost Ark", year: 1981, genres: ["Action", "Adventure"], director: "Steven Spielberg", cast: ["Harrison Ford", "Karen Allen"], overview: "An archaeologist races the Nazis to find the legendary Ark of the Covenant." },
+  { id: 480, title: "Jurassic Park", year: 1993, genres: ["Action", "Adventure", "Sci-Fi", "Thriller"], director: "Steven Spielberg", cast: ["Sam Neill", "Laura Dern", "Jeff Goldblum"], overview: "A theme park of cloned dinosaurs suffers a catastrophic breakdown." },
+  { id: 589, title: "Terminator 2: Judgment Day", year: 1991, genres: ["Action", "Sci-Fi"], director: "James Cameron", cast: ["Arnold Schwarzenegger", "Linda Hamilton"], overview: "A cyborg protects a boy destined to lead humanity against the machines." },
+  { id: 1206, title: "A Clockwork Orange", year: 1971, genres: ["Crime", "Drama", "Sci-Fi", "Thriller"], director: "Stanley Kubrick", cast: ["Malcolm McDowell"], overview: "A delinquent is subjected to an experimental aversion therapy by the state." },
+  { id: 541, title: "Blade Runner", year: 1982, genres: ["Action", "Sci-Fi", "Thriller"], director: "Ridley Scott", cast: ["Harrison Ford", "Rutger Hauer"], overview: "A blade runner hunts rogue replicants in a rain-soaked future Los Angeles." },
+  { id: 1219, title: "Psycho", year: 1960, genres: ["Crime", "Horror"], director: "Alfred Hitchcock", cast: ["Anthony Perkins", "Janet Leigh"], overview: "A secretary on the run checks into a remote motel run by a troubled young man." },
+  { id: 1258, title: "The Shining", year: 1980, genres: ["Horror"], director: "Stanley Kubrick", cast: ["Jack Nicholson", "Shelley Duvall"], overview: "A family's winter caretaking job at an isolated hotel turns terrifying." },
+  { id: 2324, title: "Life Is Beautiful", year: 1997, genres: ["Comedy", "Drama", "Romance", "War"], director: "Roberto Benigni", cast: ["Roberto Benigni", "Nicoletta Braschi"], overview: "A father uses humor to shield his son from the horrors of a concentration camp." },
+  { id: 527, title: "Schindler's List", year: 1993, genres: ["Drama", "War"], director: "Steven Spielberg", cast: ["Liam Neeson", "Ben Kingsley"], overview: "A businessman saves the lives of more than a thousand Jewish refugees during the Holocaust." },
+  { id: 1704, title: "Good Will Hunting", year: 1997, genres: ["Drama", "Romance"], director: "Gus Van Sant", cast: ["Matt Damon", "Robin Williams"], overview: "A janitor with a genius intellect works with a therapist to confront his past." },
+  { id: 7361, title: "Eternal Sunshine of the Spotless Mind", year: 2004, genres: ["Drama", "Romance", "Sci-Fi"], director: "Michel Gondry", cast: ["Jim Carrey", "Kate Winslet"], overview: "A couple undergo a procedure to erase each other from their memories." },
+  { id: 2762, title: "The Sixth Sense", year: 1999, genres: ["Drama", "Horror", "Mystery"], director: "M. Night Shyamalan", cast: ["Bruce Willis", "Haley Joel Osment"], overview: "A child psychologist treats a boy who claims he can see dead people." },
+  { id: 47, title: "Se7en", year: 1995, genres: ["Mystery", "Thriller"], director: "David Fincher", cast: ["Brad Pitt", "Morgan Freeman"], overview: "Two detectives hunt a serial killer who uses the seven deadly sins as his motives." },
+  { id: 1265, title: "Groundhog Day", year: 1993, genres: ["Comedy", "Fantasy", "Romance"], director: "Harold Ramis", cast: ["Bill Murray", "Andie MacDowell"], overview: "A weatherman finds himself living the same day over and over again." },
+  { id: 115713, title: "Ex Machina", year: 2015, genres: ["Drama", "Sci-Fi", "Thriller"], director: "Alex Garland", cast: ["Domhnall Gleeson", "Alicia Vikander", "Oscar Isaac"], overview: "A programmer evaluates the human qualities of a breathtaking humanoid AI." },
+];
+
+export const DEMO_GENRES = Array.from(new Set(DEMO_CATALOG.flatMap((m) => m.genres))).sort();
+
+// Curated demo shelves (editorial, not model output).
+export const TRENDING_IDS = [79132, 58559, 109487, 2571, 115713, 2959, 296, 5618];
+export const TOP_RATED_IDS = [318, 858, 527, 593, 1196, 260, 4993, 2324];
+export const FOR_YOU_IDS = [541, 7361, 1704, 47, 1265, 480, 1, 1258];
