@@ -9,7 +9,7 @@ import {
   type UserRecommendationRequest,
 } from "./types";
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
+const BASE = (import.meta.env['VITE_API_BASE_URL'] as string | undefined)?.replace(/\/$/, "");
 export const IS_DEMO = !BASE;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
