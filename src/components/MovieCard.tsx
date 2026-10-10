@@ -7,7 +7,7 @@ import { useFavorites } from "@/lib/library";
 import { Poster } from "./Poster";
 import { cn } from "@/lib/utils";
 
-export function MovieCard({ rec, rank, className }: { rec: Recommendation; rank?: number; className?: string }) {
+export function MovieCard({ rec, rank, className }: { rec: Recommendation; rank?: number | undefined; className?: string }) {
   const { movie, predictedRating, score } = rec;
   const { has, toggle } = useFavorites();
   const fav = has(movie.id);

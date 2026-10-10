@@ -5,9 +5,9 @@ import { DEMO_CATALOG } from "@/lib/mock-data";
 import type { Algorithm } from "@/lib/types";
 
 export const Route = createFileRoute("/recommend")({
-  validateSearch: (s: Record<string, unknown>): { mode?: Algorithm; movie?: number } => ({
-    mode: s.mode === "svd" || s.mode === "als" || s.mode === "content" ? s.mode : undefined,
-    movie: s.movie != null && !Number.isNaN(Number(s.movie)) ? Number(s.movie) : undefined,
+  validateSearch: (s: Record<string, unknown>): { mode?: Algorithm | undefined; movie?: number | undefined } => ({
+    mode: s['mode'] === "svd" || s['mode'] === "als" || s['mode'] === "content" ? s['mode'] : undefined,
+    movie: s['movie'] != null && !Number.isNaN(Number(s['movie'])) ? Number(s['movie']) : undefined,
   }),
   head: () => ({
     meta: [

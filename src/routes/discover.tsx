@@ -7,8 +7,8 @@ import { DEMO_CATALOG, DEMO_GENRES } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/discover")({
-  validateSearch: (s: Record<string, unknown>): { genre?: string } => ({
-    genre: typeof s.genre === "string" ? s.genre : undefined,
+  validateSearch: (s: Record<string, unknown>): { genre?: string | undefined } => ({
+    genre: typeof s['genre'] === "string" ? s['genre'] : undefined,
   }),
   head: () => ({
     meta: [
