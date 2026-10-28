@@ -13,7 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecommendRouteImport } from './routes/recommend'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as MovieIdRouteImport } from './routes/movie.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -36,9 +39,24 @@ const HowItWorksRoute = HowItWorksRouteImport.update({
   path: '/how-it-works',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecommendRoute = RecommendRouteImport.update({
   id: '/recommend',
   path: '/recommend',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MovieIdRoute = MovieIdRouteImport.update({
@@ -52,7 +70,10 @@ export interface FileRoutesByFullPath {
   '/discover': typeof DiscoverRoute
   '/favorites': typeof FavoritesRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/recommend': typeof RecommendRoute
+  '/signup': typeof SignupRoute
   '/movie/$id': typeof MovieIdRoute
 }
 export interface FileRoutesByTo {
@@ -60,7 +81,10 @@ export interface FileRoutesByTo {
   '/discover': typeof DiscoverRoute
   '/favorites': typeof FavoritesRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/recommend': typeof RecommendRoute
+  '/signup': typeof SignupRoute
   '/movie/$id': typeof MovieIdRoute
 }
 export interface FileRoutesById {
@@ -69,7 +93,10 @@ export interface FileRoutesById {
   '/discover': typeof DiscoverRoute
   '/favorites': typeof FavoritesRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/recommend': typeof RecommendRoute
+  '/signup': typeof SignupRoute
   '/movie/$id': typeof MovieIdRoute
 }
 export interface FileRouteTypes {
@@ -79,7 +106,10 @@ export interface FileRouteTypes {
     | '/discover'
     | '/favorites'
     | '/how-it-works'
+    | '/login'
+    | '/profile'
     | '/recommend'
+    | '/signup'
     | '/movie/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -87,7 +117,10 @@ export interface FileRouteTypes {
     | '/discover'
     | '/favorites'
     | '/how-it-works'
+    | '/login'
+    | '/profile'
     | '/recommend'
+    | '/signup'
     | '/movie/$id'
   id:
     | '__root__'
@@ -95,7 +128,10 @@ export interface FileRouteTypes {
     | '/discover'
     | '/favorites'
     | '/how-it-works'
+    | '/login'
+    | '/profile'
     | '/recommend'
+    | '/signup'
     | '/movie/$id'
   fileRoutesById: FileRoutesById
 }
@@ -104,7 +140,10 @@ export interface RootRouteChildren {
   DiscoverRoute: typeof DiscoverRoute
   FavoritesRoute: typeof FavoritesRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
   RecommendRoute: typeof RecommendRoute
+  SignupRoute: typeof SignupRoute
   MovieIdRoute: typeof MovieIdRoute
 }
 
@@ -138,11 +177,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recommend': {
       id: '/recommend'
       path: '/recommend'
       fullPath: '/recommend'
       preLoaderRoute: typeof RecommendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/movie/$id': {
@@ -160,7 +220,10 @@ const rootRouteChildren: RootRouteChildren = {
   DiscoverRoute: DiscoverRoute,
   FavoritesRoute: FavoritesRoute,
   HowItWorksRoute: HowItWorksRoute,
+  LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
   RecommendRoute: RecommendRoute,
+  SignupRoute: SignupRoute,
   MovieIdRoute: MovieIdRoute,
 }
 export const routeTree = rootRouteImport

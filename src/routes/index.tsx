@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Activity, ArrowRight, Clapperboard, Play, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Clapperboard, Compass, Film, Play, Star } from "lucide-react";
 import hero from "@/assets/hero.jpg";
 import { Button } from "@/components/ui/button";
 import { MovieRow } from "@/components/MovieGrid";
@@ -11,10 +11,10 @@ import { useRecent } from "@/lib/library";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CineMatch AI — Your next favorite movie starts here" },
-      { name: "description", content: "Discover movies you'll love, powered by SVD, ALS and content-based recommendation algorithms trained on MovieLens 25M." },
-      { property: "og:title", content: "CineMatch AI — Your next favorite movie starts here" },
-      { property: "og:description", content: "AI-powered movie discovery built on a hybrid recommender trained on MovieLens 25M." },
+      { title: "CineMatch — Explore and Discover Movies" },
+      { name: "description", content: "Explore curated movie collections, classics, and trending films." },
+      { property: "og:title", content: "CineMatch — Explore and Discover Movies" },
+      { property: "og:description", content: "Curated movie discovery built for cinema lovers." },
     ],
   }),
   component: Home,
@@ -23,35 +23,88 @@ export const Route = createFileRoute("/")({
 const byIds = (ids: number[]) => ids.map((id) => ({ movie: DEMO_CATALOG.find((m) => m.id === id)! }));
 
 function HeroSection() {
-  const featured = byIds(TRENDING_IDS.slice(0, 4));
+  const featured = byIds(TRENDING_IDS.slice(0, 2));
+
   return (
-    <section className="relative flex min-h-[92vh] items-end overflow-hidden pb-16 pt-28">
-      <img src={hero} alt="" width={1920} height={1088} className="absolute inset-0 h-full w-full object-cover" />
+    <section className="relative flex min-h-[85vh] items-end overflow-hidden pb-16 pt-28 sm:min-h-[90vh]">
+      <img
+        src={hero}
+        alt="Cinema background"
+        width={1920}
+        height={1088}
+        fetchPriority="high"
+        className="absolute inset-0 h-full w-full object-cover object-center opacity-40 mix-blend-luminosity filter contrast-125"
+      />
       <div className="absolute inset-0 bg-side" />
       <div className="absolute inset-0 bg-fade" />
-      <div className="relative mx-auto grid w-full max-w-7xl items-end gap-12 px-4 md:px-8 lg:grid-cols-[1.2fr_1fr]">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-          <span className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-xs font-medium">
-            <Sparkles className="h-3.5 w-3.5 text-primary" /> Hybrid ML recommender · MovieLens 25M
+      <div className="pointer-events-none absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-gradient-primary opacity-20 blur-[120px]" />
+
+      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 sm:px-6 md:px-8 lg:grid-cols-[1.3fr_0.9fr]">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-md">
+            <Film className="h-3.5 w-3.5 text-primary" />
+            Curated Cinema Catalog
           </span>
-          <h1 className="mt-6 text-5xl font-extrabold leading-[0.95] md:text-7xl">
+
+          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05]">
             Your Next Favorite Movie <span className="text-gradient">Starts Here.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Discover movies you'll love, powered by intelligent recommendation algorithms.
+
+          <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg leading-relaxed">
+            Explore timeless classics, award-winning cinema, and curated collections tailored for film lovers.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <Button asChild variant="hero" size="xl">
-              <Link to="/discover"><Play className="fill-current" /> Discover Movies</Link>
+              <Link to="/discover">
+                <Play className="fill-current" /> Browse All Movies
+              </Link>
             </Button>
             <Button asChild variant="glass" size="xl">
-              <Link to="/recommend"><Sparkles /> Get AI Recommendations</Link>
+              <Link to="/favorites">
+                <Star className="h-4 w-4" /> My Watchlist
+              </Link>
             </Button>
           </div>
+
+          <div className="mt-10 flex items-center gap-6 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:gap-8">
+            <div>
+              <p className="font-display text-xl font-bold text-foreground">Curated</p>
+              <p className="mt-0.5">Top-Tier Cinema</p>
+            </div>
+            <div className="h-8 w-px bg-border/60" />
+            <div>
+              <p className="font-display text-xl font-bold text-foreground">18+ Genres</p>
+              <p className="mt-0.5">Diverse Selection</p>
+            </div>
+            <div className="h-8 w-px bg-border/60" />
+            <div>
+              <p className="font-display text-xl font-bold text-foreground">Instant</p>
+              <p className="mt-0.5">Local Watchlist</p>
+            </div>
+          </div>
         </motion.div>
-        <div className="hidden grid-cols-4 gap-3 lg:grid">
+
+        {/* Featured Showcase: 2 high-impact cards */}
+        <div className="hidden grid-cols-2 gap-5 lg:grid">
           {featured.map((r, i) => (
-            <motion.div key={r.movie.id} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: i % 2 ? 24 : 0 }} transition={{ delay: 0.3 + i * 0.1 }}>
+            <motion.div
+              key={r.movie.id}
+              initial={{ opacity: 0, y: 35 }}
+              animate={{ opacity: 1, y: i === 1 ? 28 : 0 }}
+              transition={{ delay: 0.2 + i * 0.15, duration: 0.5 }}
+              className="w-full"
+            >
+              <div className="mb-2 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-primary">
+                  <Compass className="h-3.5 w-3.5" /> Featured Pick
+                </span>
+                <span>#{i + 1} Trending</span>
+              </div>
               <MovieCard rec={r} />
             </motion.div>
           ))}
@@ -63,61 +116,68 @@ function HeroSection() {
 
 function Home() {
   const recent = useRecent();
-  const recentItems = recent.map((id) => DEMO_CATALOG.find((m) => m.id === id)).filter(Boolean).map((m) => ({ movie: m! }));
+  const recentItems = recent
+    .map((id) => DEMO_CATALOG.find((m) => m.id === id))
+    .filter(Boolean)
+    .map((m) => ({ movie: m! }));
+
   return (
     <>
       <HeroSection />
-      <div className="mx-auto max-w-7xl space-y-16 px-4 md:px-8">
-        {recentItems.length > 0 && <MovieRow title="Continue exploring" subtitle="Recently viewed on this device" items={recentItems} />}
-        <MovieRow title="Trending Now" subtitle="Editorial picks from the demo catalog" items={byIds(TRENDING_IDS)} />
-        <MovieRow title="Top Rated" subtitle="All-time classics" items={byIds(TOP_RATED_IDS)} />
-        <section className="space-y-4">
+
+      <div className="mx-auto max-w-7xl space-y-20 px-4 sm:px-6 md:px-8 pb-20">
+        {recentItems.length > 0 && (
+          <MovieRow
+            title="Continue Exploring"
+            subtitle="Titles recently viewed on your device"
+            items={recentItems}
+          />
+        )}
+
+        <MovieRow
+          title="Trending Now"
+          subtitle="Popular films trending with viewers this week"
+          items={byIds(TRENDING_IDS)}
+        />
+
+        <MovieRow
+          title="All-Time Classics"
+          subtitle="Consistently highest rated by global film enthusiasts"
+          items={byIds(TOP_RATED_IDS)}
+        />
+
+        <MovieRow
+          title="Curated For You"
+          subtitle="Specially selected titles across popular categories"
+          items={byIds(FOR_YOU_IDS)}
+        />
+
+        {/* Browse by Genre Section */}
+        <section className="space-y-5">
           <div className="flex items-end justify-between">
             <div>
-              <h2 className="text-2xl font-bold md:text-3xl">Recommended For You</h2>
-              <p className="text-sm text-muted-foreground">Sample shelf — get real picks from the models on the AI page.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Browse by Genre</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Filter the catalog across diverse thematic categories</p>
             </div>
-            <Link to="/recommend" className="hidden items-center gap-1 text-sm text-primary hover:underline sm:flex">
-              Personalize <ArrowRight className="h-4 w-4" />
+            <Link
+              to="/discover"
+              className="hidden items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:underline sm:inline-flex"
+            >
+              Explore all genres <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="-mx-4 flex gap-5 overflow-x-auto px-4 pb-4 scrollbar-none">
-            {byIds(FOR_YOU_IDS).map((r) => <MovieCard key={r.movie.id} rec={r} className="w-40 shrink-0 md:w-48" />)}
-          </div>
-        </section>
 
-        <section>
-          <h2 className="text-2xl font-bold md:text-3xl">Browse by Genre</h2>
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {DEMO_GENRES.map((g) => (
-              <Link key={g} to="/discover" search={{ genre: g }} className="rounded-full glass px-5 py-2.5 text-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary">
+              <Link
+                key={g}
+                to="/discover"
+                search={{ genre: g }}
+                className="rounded-full border border-border/70 bg-card/60 px-5 py-2.5 text-sm font-medium text-foreground backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-card/90 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+              >
                 {g}
               </Link>
             ))}
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-3xl glass p-8 md:p-12">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-primary opacity-25 blur-3xl" />
-          <div className="relative">
-            <h2 className="text-3xl font-bold md:text-4xl">How the engine works</h2>
-            <p className="mt-2 max-w-2xl text-muted-foreground">Three complementary models, one hybrid recommendation system.</p>
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
-              {[
-                { icon: Users, t: "SVD", d: "Learns hidden taste factors from millions of star ratings." },
-                { icon: Activity, t: "ALS", d: "Learns from implicit behavior — what people actually watch." },
-                { icon: Clapperboard, t: "Content-Based", d: "Matches movies by genres, cast, directors and keywords." },
-              ].map((x) => (
-                <div key={x.t}>
-                  <x.icon className="h-6 w-6 text-primary" />
-                  <h3 className="mt-3 text-lg font-bold">{x.t}</h3>
-                  <p className="text-sm text-muted-foreground">{x.d}</p>
-                </div>
-              ))}
-            </div>
-            <Button asChild variant="hero" size="lg" className="mt-8">
-              <Link to="/how-it-works">Explore the models <ArrowRight /></Link>
-            </Button>
           </div>
         </section>
       </div>

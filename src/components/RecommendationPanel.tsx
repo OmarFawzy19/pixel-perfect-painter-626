@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Activity, Clapperboard, Loader2, Sparkles, Users } from "lucide-react";
+import { Activity, Clapperboard, HelpCircle, Loader2, RefreshCw, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { movieApi } from "@/lib/api";
@@ -12,29 +12,50 @@ import { DemoNotice } from "./DemoNotice";
 import { cn } from "@/lib/utils";
 
 const ALGOS: { id: Algorithm; label: string; sub: string; icon: typeof Users }[] = [
-  { id: "svd", label: "Personalized", sub: "SVD · ratings", icon: Users },
-  { id: "als", label: "Behavioral", sub: "ALS · implicit", icon: Activity },
-  { id: "content", label: "Similar Movies", sub: "Content-based", icon: Clapperboard },
+  { id: "svd", label: "Personalized", sub: "SVD · Matrix Factorization", icon: Users },
+  { id: "als", label: "Behavioral", sub: "ALS · Implicit Feedback", icon: Activity },
+  { id: "content", label: "Similar Movies", sub: "TF-IDF · Metadata Profile", icon: Clapperboard },
 ];
+
+const SAMPLE_USERS = [1, 42, 100, 314];
 
 export function AlgorithmSelector({ value, onChange }: { value: Algorithm; onChange: (a: Algorithm) => void }) {
   return (
-    <div role="tablist" className="grid grid-cols-3 gap-2 rounded-2xl glass p-1.5">
+    <div
+      role="tablist"
+      aria-label="Recommendation algorithms"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-border/70 bg-card/60 p-2 backdrop-blur-xl sm:grid-cols-3 sm:gap-2.5"
+    >
       {ALGOS.map((a) => (
         <button
           key={a.id}
+          id={`tab-${a.id}`}
           role="tab"
           aria-selected={value === a.id}
+          aria-controls={`panel-${a.id}`}
           onClick={() => onChange(a.id)}
-          className="relative rounded-xl px-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            "relative flex flex-col justify-center rounded-xl px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            value === a.id ? "text-primary-foreground font-semibold shadow-md" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+          )}
         >
           {value === a.id && (
-            <motion.span layoutId="algo-pill" className="absolute inset-0 rounded-xl bg-gradient-primary shadow-glow" />
+            <motion.span
+              layoutId="algo-pill"
+              className="absolute inset-0 rounded-xl bg-gradient-primary shadow-glow"
+              transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+            />
           )}
-          <span className="relative flex items-center gap-2 text-sm font-semibold">
-            <a.icon className="h-4 w-4" /> <span className="truncate">{a.label}</span>
+          <span className="relative flex items-center gap-2 text-sm font-bold">
+            <a.icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{a.label}</span>
           </span>
-          <span className={cn("relative mt-0.5 block text-xs", value === a.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+          <span
+            className={cn(
+              "relative mt-0.5 block truncate text-[11px]",
+              value === a.id ? "text-primary-foreground/90 font-medium" : "text-muted-foreground",
+            )}
+          >
             {a.sub}
           </span>
         </button>
@@ -43,13 +64,28 @@ export function AlgorithmSelector({ value, onChange }: { value: Algorithm; onCha
   );
 }
 
-const COPY: Record<Algorithm, string> = {
-  svd: "Matrix factorization on explicit star ratings. Enter a MovieLens user ID to get the top movies this user is predicted to rate highest.",
-  als: "Alternating Least Squares on implicit feedback — it learns from interaction patterns (what users watched) rather than the exact stars they gave.",
-  content: "TF-IDF similarity over genres, cast, directors and keywords. Pick a movie and find titles with the most similar profile.",
+const COPY: Record<Algorithm, { title: string; desc: string }> = {
+  svd: {
+    title: "Explicit Rating Collaborative Filtering",
+    desc: "Singular Value Decomposition factorizes the user-item star rating matrix into latent taste factors, predicting the stars you'd give titles you haven't seen.",
+  },
+  als: {
+    title: "Implicit Behavioral Feedback",
+    desc: "Alternating Least Squares learns from implicit interaction signals (what users actually watched and replayed) rather than static star ratings.",
+  },
+  content: {
+    title: "Content-Based Similarity Matching",
+    desc: "Vectorizes movie genres, cast, directors, and plot keywords with TF-IDF. Cosine distance identifies titles that share the exact stylistic DNA.",
+  },
 };
 
-export function RecommendationPanel({ initialMode = "svd", initialMovie }: { initialMode?: Algorithm; initialMovie?: Movie | null }) {
+export function RecommendationPanel({
+  initialMode = "svd",
+  initialMovie,
+}: {
+  initialMode?: Algorithm;
+  initialMovie?: Movie | null;
+}) {
   const [mode, setMode] = useState<Algorithm>(initialMode);
   const [userId, setUserId] = useState("");
   const [movie, setMovie] = useState<Movie | null>(initialMovie ?? null);
@@ -57,7 +93,10 @@ export function RecommendationPanel({ initialMode = "svd", initialMovie }: { ini
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendationResponse | null>(null);
 
-  useEffect(() => { setResult(null); setError(null); }, [mode]);
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+  }, [mode]);
 
   const run = async () => {
     setError(null);
@@ -65,11 +104,11 @@ export function RecommendationPanel({ initialMode = "svd", initialMovie }: { ini
     if (mode !== "content") {
       const id = Number(userId);
       if (!Number.isInteger(id) || id < 1) {
-        setError("Enter a valid MovieLens user ID (a positive whole number).");
+        setError("Please enter a valid MovieLens user ID (a positive integer, e.g. 42).");
         return;
       }
     } else if (!movie) {
-      setError("Pick a movie first.");
+      setError("Please search and select a movie first.");
       return;
     }
     setLoading(true);
@@ -81,7 +120,6 @@ export function RecommendationPanel({ initialMode = "svd", initialMovie }: { ini
       setResult(r);
       if (r.recommendations.length === 0) toast("No recommendations returned.");
     } catch (e) {
-      // Never fall back to demo predictions when a live request fails.
       const msg = e instanceof Error ? e.message : "Something went wrong.";
       setError(msg);
       toast.error(msg);
@@ -97,52 +135,115 @@ export function RecommendationPanel({ initialMode = "svd", initialMovie }: { ini
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}
-          initial={{ opacity: 0, y: 8 }}
+          id={`panel-${mode}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${mode}`}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          className="rounded-2xl glass p-6 md:p-8"
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.25 }}
+          className="rounded-3xl border border-border/70 bg-card/60 p-6 backdrop-blur-xl shadow-card md:p-8"
         >
-          <p className="max-w-2xl text-sm text-muted-foreground">{COPY[mode]}</p>
+          <div>
+            <h3 className="text-base font-bold text-foreground sm:text-lg">{COPY[mode].title}</h3>
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{COPY[mode].desc}</p>
+          </div>
+
           <form
-            onSubmit={(e) => { e.preventDefault(); run(); }}
-            className="mt-6 flex flex-col gap-3 md:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run();
+            }}
+            className="mt-6 flex flex-col gap-3 md:flex-row md:items-center"
           >
             {mode === "content" ? (
               <SearchBar className="flex-1" onSelect={setMovie} />
             ) : (
-              <input
-                inputMode="numeric"
-                aria-label="MovieLens user ID"
-                placeholder="MovieLens user ID, e.g. 42"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value.replace(/\D/g, ""))}
-                className="h-12 flex-1 rounded-full glass px-5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
-              />
+              <div className="flex-1">
+                <input
+                  inputMode="numeric"
+                  aria-label="MovieLens user ID"
+                  placeholder="Enter MovieLens user ID, e.g. 42"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value.replace(/\D/g, ""))}
+                  className="h-12 w-full rounded-full border border-border/70 bg-background/60 px-5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                />
+              </div>
             )}
-            <Button type="submit" variant="hero" size="xl" disabled={loading}>
+
+            <Button type="submit" variant="hero" size="xl" disabled={loading} className="shrink-0">
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
               {mode === "content" ? "Find Similar Movies" : "Get Recommendations"}
             </Button>
           </form>
 
-          {mode === "content" && movie && (
-            <div className="mt-6 flex gap-5 rounded-xl bg-background/50 p-4">
-              <div className="w-24 shrink-0 overflow-hidden rounded-lg md:w-32"><div className="aspect-[2/3]"><Poster movie={movie} /></div></div>
-              <div>
-                <p className="text-xs uppercase tracking-widest text-primary">Selected</p>
-                <h3 className="mt-1 text-xl font-bold md:text-2xl">{movie.title} <span className="text-muted-foreground">({movie.year})</span></h3>
-                <p className="mt-1 text-xs text-muted-foreground">{movie.genres.join(" · ")}</p>
-                {movie.overview && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{movie.overview}</p>}
-              </div>
+          {/* Sample User ID Quick-Pills for SVD / ALS */}
+          {mode !== "content" && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">Try sample user:</span>
+              {SAMPLE_USERS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setUserId(String(id))}
+                  className={cn(
+                    "rounded-full border px-3 py-1 font-semibold transition-all hover:border-primary hover:text-primary active:scale-95",
+                    userId === String(id)
+                      ? "border-primary bg-primary/20 text-primary font-bold"
+                      : "border-border/60 bg-secondary/50 text-muted-foreground",
+                  )}
+                >
+                  User #{id}
+                </button>
+              ))}
             </div>
           )}
-          {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
+
+          {/* Selected Movie Preview Card in Content Mode */}
+          {mode === "content" && movie && (
+            <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 shrink-0 overflow-hidden rounded-xl border border-border/50 shadow-sm sm:w-20">
+                  <div className="aspect-[2/3]">
+                    <Poster movie={movie} />
+                  </div>
+                </div>
+                <div>
+                  <span className="rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    Selected Seed Movie
+                  </span>
+                  <h4 className="mt-1 font-display text-lg font-bold text-foreground sm:text-xl">
+                    {movie.title} {movie.year ? <span className="text-muted-foreground font-normal">({movie.year})</span> : null}
+                  </h4>
+                  <p className="mt-0.5 text-xs text-muted-foreground font-medium">{movie.genres.join(" · ")}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMovie(null)}
+                className="self-start sm:self-center"
+              >
+                <RefreshCw className="h-3.5 w-3.5" /> Change Movie
+              </Button>
+            </div>
+          )}
+
+          {error && (
+            <div role="alert" className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive">
+              {error}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
+      {/* Loading Skeleton */}
       {loading && <LoadingSkeleton />}
+
+      {/* Results View */}
       {!loading && result && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {result.source === "demo" && (
             <DemoNotice>
               {mode === "content"
@@ -150,26 +251,53 @@ export function RecommendationPanel({ initialMode = "svd", initialMovie }: { ini
                 : "These are sample titles shuffled from a demo catalog — not real SVD/ALS predictions. Connect the API to see genuine model output."}
             </DemoNotice>
           )}
-          <h2 className="text-2xl font-bold">Top {result.recommendations.length} {mode === "content" ? "similar movies" : "picks"}</h2>
+
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Top {result.recommendations.length} {mode === "content" ? "Similar Movies" : "Picks"}
+              </h2>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Generated using {mode === "svd" ? "SVD Collaborative Filtering" : mode === "als" ? "ALS Implicit Factorization" : "TF-IDF Cosine Similarity"}
+              </p>
+            </div>
+          </div>
+
           <MovieGrid items={result.recommendations} ranked />
+
+          {/* Explanation Cards */}
           {result.recommendations.some((r) => r.explanation) && (
-            <div className="rounded-2xl glass p-6">
-              <h3 className="font-bold">Why these movies?</h3>
-              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                {result.recommendations.filter((r) => r.explanation).map((r) => (
-                  <li key={r.movie.id}><span className="text-foreground">{r.movie.title}:</span> {r.explanation}</li>
-                ))}
-              </ul>
+            <div className="rounded-3xl border border-border/70 bg-card/60 p-6 backdrop-blur-xl md:p-8">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                <h3 className="font-display text-lg font-bold text-foreground">Why These Recommendations?</h3>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {result.recommendations
+                  .filter((r) => r.explanation)
+                  .map((r) => (
+                    <div key={r.movie.id} className="rounded-2xl border border-border/50 bg-background/40 p-4">
+                      <p className="text-sm font-bold text-foreground">{r.movie.title}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{r.explanation}</p>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
         </div>
       )}
+
+      {/* Empty State */}
       {!loading && !result && !error && (
-        <div className="grid place-items-center rounded-2xl border border-dashed border-border py-16 text-center">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <p className="mt-3 font-semibold">Your recommendations will appear here</p>
-          <p className="text-sm text-muted-foreground">
-            {mode === "content" ? "Search for a movie to get started." : "Enter a user ID to get started."}
+        <div className="relative overflow-hidden rounded-3xl border border-dashed border-border/80 bg-card/30 py-20 px-4 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-primary/10 border border-primary/20 text-primary shadow-glow">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <h3 className="mt-4 font-display text-lg font-bold text-foreground">Your recommendations will appear here</h3>
+          <p className="mt-1.5 mx-auto max-w-md text-sm text-muted-foreground">
+            {mode === "content"
+              ? "Search and select a movie above to find titles with matching plot keywords, cast, and genres."
+              : "Enter a MovieLens user ID above or tap one of our sample user badges to generate recommendations."}
           </p>
         </div>
       )}
