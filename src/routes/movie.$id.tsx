@@ -1,34 +1,62 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Clapperboard, Heart, Sparkles, Star, User } from "lucide-react";
+import { ArrowLeft, Clapperboard, Heart, Star } from "lucide-react";
 import { toast } from "sonner";
-import { movieApi } from "@/lib/api";
 import { pushRecent, useFavorites } from "@/lib/library";
-import type { Recommendation } from "@/lib/types";
+import type { Movie, Recommendation } from "@/lib/types";
 import { Poster } from "@/components/Poster";
 import { MovieGrid, LoadingSkeleton } from "@/components/MovieGrid";
-import { DemoNotice } from "@/components/DemoNotice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const MOVIES_API_BASE = (
+  (import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined) ?? ""
+).replace(/\/$/, "");
+
+// MovieLens titles already include their release year, e.g. "Toy Story (1995)".
+function displayTitle(movie: Movie) {
+  return movie.title.replace(/\s*\(\d{4}\)$/, "");
+}
+
+async function fetchRealMovie(id: number): Promise<Movie | null> {
+  if (!MOVIES_API_BASE) {
+    throw new Error("Movies API is not configured. Check VITE_MOVIES_API_BASE_URL in .env.local.");
+  }
+
+  const response = await fetch(`${MOVIES_API_BASE}/api/movies/${id}`);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Could not load movie details (${response.status}).`);
+  }
+  return (await response.json()) as Movie;
+}
+
 export const Route = createFileRoute("/movie/$id")({
   loader: async ({ params }) => {
-    const movie = await movieApi.getMovie(Number(params.id));
+    const id = Number(params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) throw notFound();
+    const movie = await fetchRealMovie(id);
     if (!movie) throw notFound();
     return { movie };
   },
   head: ({ loaderData }) => {
-    if (!loaderData)
-      return { meta: [{ title: "Movie not found — CineMatch AI" }, { name: "robots", content: "noindex" }] };
+    if (!loaderData) {
+      return {
+        meta: [
+          { title: "Movie not found — CineMatch AI" },
+          { name: "robots", content: "noindex" },
+        ],
+      };
+    }
     const m = loaderData.movie;
-    const t = `${m.title}${m.year ? ` (${m.year})` : ""} — CineMatch`;
-    const d = m.overview ?? `${m.title} details and similar movies.`;
+    const title = `${displayTitle(m)}${m.year ? ` (${m.year})` : ""} — CineMatch`;
+    const description = m.overview ?? `${displayTitle(m)} details and similar movies.`;
     return {
       meta: [
-        { title: t },
-        { name: "description", content: d },
-        { property: "og:title", content: t },
-        { property: "og:description", content: d },
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
       ],
     };
   },
@@ -57,16 +85,47 @@ function MovieDetails() {
   const { has, toggle } = useFavorites();
   const fav = has(movie.id);
   const [similar, setSimilar] = useState<Recommendation[] | null>(null);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const title = displayTitle(movie);
 
   useEffect(() => {
     pushRecent(movie.id);
+  }, [movie.id]);
+
+  useEffect(() => {
+    let cancelled = false;
     setSimilar(null);
     setErr(null);
-    movieApi
-      .similar({ movie_id: movie.id, limit: 10 })
-      .then((r) => setSimilar(r.recommendations))
-      .catch((e) => setErr(e.message));
+    setLoadingSimilar(true);
+
+    async function loadSimilar() {
+      try {
+        if (!MOVIES_API_BASE) {
+          throw new Error("Movies API is not configured.");
+        }
+        const response = await fetch(
+          `${MOVIES_API_BASE}/api/movies/${movie.id}/similar?limit=10`
+        );
+        if (!response.ok) {
+          throw new Error(`Could not load similar movies (${response.status}).`);
+        }
+        const data = (await response.json()) as { recommendations?: Recommendation[]; source?: string };
+        if (!Array.isArray(data.recommendations)) {
+          throw new Error("Invalid recommendations response from the server.");
+        }
+        if (!cancelled) setSimilar(data.recommendations);
+      } catch (error) {
+        if (!cancelled) {
+          setErr(error instanceof Error ? error.message : "Could not load similar movies.");
+        }
+      } finally {
+        if (!cancelled) setLoadingSimilar(false);
+      }
+    }
+
+    void loadSimilar();
+    return () => { cancelled = true; };
   }, [movie.id]);
 
   return (
@@ -96,7 +155,7 @@ function MovieDetails() {
             </Link>
 
             <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl leading-[1.05]">
-              {movie.title}
+              {title}
             </h1>
 
             {/* Badges: Year, Rating, Genres */}
@@ -115,14 +174,14 @@ function MovieDetails() {
                   {movie.avgRating.toFixed(1)} / 5.0
                 </span>
               )}
-              {movie.genres.map((g) => (
+              {movie.genres.map((genre) => (
                 <Link
-                  key={g}
+                  key={genre}
                   to="/discover"
-                  search={{ genre: g }}
+                  search={{ genre }}
                   className="rounded-full border border-border/60 bg-card/40 px-3 py-1 text-muted-foreground backdrop-blur-sm transition-all hover:border-primary hover:text-primary active:scale-95"
                 >
-                  {g}
+                  {genre}
                 </Link>
               ))}
             </div>
@@ -133,7 +192,7 @@ function MovieDetails() {
               </p>
             )}
 
-            {/* Metadata (Director & Cast) */}
+            {/* Metadata: displayed only if returned by the API */}
             <div className="mt-6 flex flex-col gap-3 border-t border-border/50 pt-5 text-sm sm:flex-row sm:gap-8">
               {movie.director && (
                 <div>
@@ -149,12 +208,11 @@ function MovieDetails() {
               )}
             </div>
 
-            {/* Action CTAs */}
             <div className="mt-8 flex flex-wrap items-center gap-3.5">
               <Button
                 variant={fav ? "glass" : "hero"}
                 size="xl"
-                onClick={() => toast(toggle(movie.id) ? `Saved “${movie.title}” to favorites` : "Removed from favorites")}
+                onClick={() => toast(toggle(movie.id) ? `Saved “${title}” to favorites` : "Removed from favorites")}
                 className="gap-2"
               >
                 <Heart className={cn("h-4 w-4 transition-transform", fav && "fill-current text-primary scale-110")} />
@@ -165,12 +223,12 @@ function MovieDetails() {
         </div>
       </section>
 
-      {/* Similar Movies Section */}
+      {/* Similar movies from the Content-Based TF-IDF model via FastAPI. */}
       <section className="mx-auto max-w-7xl space-y-6 px-4 pb-20 sm:px-6 md:px-8">
         <div className="flex items-center gap-2.5 border-b border-border/60 pb-3">
           <Clapperboard className="h-5 w-5 text-primary" />
           <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            More Titles Like <span className="text-foreground">{movie.title}</span>
+            More Titles Like <span className="text-foreground">{title}</span>
           </h2>
         </div>
 
@@ -178,10 +236,12 @@ function MovieDetails() {
           <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             {err}
           </div>
-        ) : similar ? (
+        ) : loadingSimilar ? (
+          <LoadingSkeleton />
+        ) : similar && similar.length > 0 ? (
           <MovieGrid items={similar} />
         ) : (
-          <LoadingSkeleton />
+          <p className="text-sm text-muted-foreground">No similar movies available yet.</p>
         )}
       </section>
     </>

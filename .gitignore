@@ -30,3 +30,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local database and datasets
+backend/*.db
+backend/*.db-*
+backend/data/
+
+# AI Models
+backend/models/
+
+# Temporary files
+*.before-ai.bak
+*.before-als.bak
+connect_recommendations.py
