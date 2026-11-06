@@ -1,0 +1,11 @@
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+models/
+data/
+*.db
+*.db-*
+*.zip
+*.bak
