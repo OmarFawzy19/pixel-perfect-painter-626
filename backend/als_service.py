@@ -4,6 +4,7 @@ Uses the original implicit ALS model, fitted LabelEncoders, and sparse
 user-item matrix without changing the training algorithm.
 Only load model files created by someone you trust.
 """
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,7 +12,8 @@ import joblib
 import numpy as np
 from scipy.sparse import load_npz
 
-MODEL_DIR = Path(__file__).resolve().parent / "models"
+ASSET_DIR = Path(os.getenv("CINEMATCH_ASSET_DIR", str(Path(__file__).resolve().parent)))
+MODEL_DIR = ASSET_DIR / "models"
 
 
 @lru_cache(maxsize=1)
