@@ -1,9 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock, Compass, Heart } from "lucide-react";
-import { MovieGrid } from "@/components/MovieGrid";
+import { MovieGrid, LoadingSkeleton } from "@/components/MovieGrid";
 import { Button } from "@/components/ui/button";
-import { DEMO_CATALOG } from "@/lib/mock-data";
 import { useFavorites, useRecent } from "@/lib/library";
+import type { Movie, Recommendation } from "@/lib/types";
 
 export const Route = createFileRoute("/favorites")({
   head: () => ({
@@ -17,15 +18,82 @@ export const Route = createFileRoute("/favorites")({
   component: Favorites,
 });
 
-const toRecs = (ids: number[]) =>
-  ids
-    .map((id) => DEMO_CATALOG.find((m) => m.id === id))
-    .filter(Boolean)
-    .map((m) => ({ movie: m! }));
+// Match the real catalog backend used by Home / Discover / Movie Details.
+const MOVIES_API_BASE_URL = (
+  (import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined) ||
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "http://127.0.0.1:8000"
+).replace(/\/$/, "");
+
+async function loadMovie(id: number, signal: AbortSignal): Promise<Movie> {
+  const response = await fetch(`${MOVIES_API_BASE_URL}/api/movies/${id}`, { signal });
+  if (!response.ok) {
+    throw new Error(`Could not load movie ${id} (${response.status})`);
+  }
+  return response.json() as Promise<Movie>;
+}
 
 function Favorites() {
   const { favorites } = useFavorites();
   const recent = useRecent();
+  const [moviesById, setMoviesById] = useState<Record<number, Movie>>({});
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Re-fetch when the saved/recent IDs change; never overwrite users' saved IDs.
+  const ids = useMemo(
+    () => [...new Set([...favorites, ...recent])].filter((id) => Number.isInteger(id) && id > 0),
+    [favorites, recent],
+  );
+  const idsKey = ids.join(",");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (ids.length === 0) {
+      setMoviesById({});
+      setLoadError(null);
+      setLoading(false);
+      return () => controller.abort();
+    }
+
+    setLoading(true);
+    setLoadError(null);
+    // One request per unique ID. Missing posters still use the Poster fallback.
+    Promise.allSettled(ids.map((id) => loadMovie(id, controller.signal)))
+      .then((results) => {
+        if (controller.signal.aborted) return;
+        const found: Record<number, Movie> = {};
+        let failures = 0;
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            found[result.value.id] = result.value;
+          } else {
+            failures += 1;
+          }
+        }
+        setMoviesById(found);
+        if (failures > 0) {
+          setLoadError(
+            failures === ids.length
+              ? "Could not load your movies. Check that the FastAPI backend is running."
+              : `${failures} movie${failures === 1 ? "" : "s"} could not be loaded.`,
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
+    // idsKey is the meaningful dependency; array identity from a store may change every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
+
+  const toRecs = (movieIds: number[]): Recommendation[] =>
+    movieIds
+      .map((id) => moviesById[id])
+      .filter((movie): movie is Movie => movie !== undefined)
+      .map((movie) => ({ movie }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-16 px-4 pt-28 pb-20 sm:px-6 md:px-8">
@@ -60,9 +128,13 @@ function Favorites() {
           )}
         </div>
 
+        {loadError && (
+          <p role="alert" className="mt-4 text-sm text-destructive">{loadError}</p>
+        )}
+
         <div className="mt-8">
           {favorites.length > 0 ? (
-            <MovieGrid items={toRecs(favorites)} />
+            loading ? <LoadingSkeleton count={Math.min(favorites.length, 10)} /> : <MovieGrid items={toRecs(favorites)} />
           ) : (
             <div className="relative overflow-hidden rounded-3xl border border-dashed border-border/80 bg-card/30 py-20 px-4 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-glow">
@@ -93,7 +165,7 @@ function Favorites() {
             </span>
           </div>
           <div className="mt-6">
-            <MovieGrid items={toRecs(recent)} />
+            {loading ? <LoadingSkeleton count={Math.min(recent.length, 10)} /> : <MovieGrid items={toRecs(recent)} />}
           </div>
         </div>
       )}

@@ -49,12 +49,32 @@ export const movieApi = {
     return request("/api/health");
   },
 
-  async search(query: string): Promise<Movie[]> {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    if (IS_DEMO) return DEMO_CATALOG.filter((m) => m.title.toLowerCase().includes(q)).slice(0, 8);
-    return request(`/api/movies/search?query=${encodeURIComponent(query)}`);
-  },
+async search(query: string): Promise<Movie[]> {
+  const q = query.trim();
+  if (!q) return [];
+
+  const base = (
+    import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined
+  )?.replace(/\/$/, "");
+
+  if (!base) {
+    throw new ApiError("Movie API URL is not configured.");
+  }
+
+  const response = await fetch(
+    `${base}/api/movies/search?query=${encodeURIComponent(q)}`
+  );
+
+  if (!response.ok) {
+    throw new ApiError(
+      `Movie search failed (${response.status})`,
+      response.status
+    );
+  }
+
+  return response.json() as Promise<Movie[]>;
+},
+
 
   async getMovie(id: number): Promise<Movie | null> {
     if (IS_DEMO) return DEMO_CATALOG.find((m) => m.id === id) ?? null;
@@ -62,40 +82,73 @@ export const movieApi = {
   },
 
   async recommendForUser(req: UserRecommendationRequest): Promise<RecommendationResponse> {
-    const limit = req.limit ?? 10;
-    if (IS_DEMO) {
-      await wait(900);
-      const seed = req.user_id + (req.algorithm === "als" ? 7919 : 0);
-      const picks = [...DEMO_CATALOG]
-        .sort((a, b) => hash(a.id + seed) - hash(b.id + seed))
-        .slice(0, limit);
-      // Demo mode: no fabricated ratings/scores.
-      return { source: "demo", recommendations: picks.map((movie) => ({ movie })) };
-    }
-    const data = await request<RecommendationResponse>("/api/recommend/user", {
+    const base = (import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
+    if (!base) throw new ApiError("Set VITE_MOVIES_API_BASE_URL in .env.local to use the real SVD model.");
+    const response = await fetch(`${base}/api/recommend/user`, {
       method: "POST",
-      body: JSON.stringify({ ...req, limit }),
-    });
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...req, limit: req.limit ?? 10 }),
+    }).catch(() => { throw new ApiError("Cannot reach FastAPI. Check port 8000."); });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new ApiError(typeof body?.detail === "string" ? body.detail : `Request failed (${response.status})`, response.status);
+    }
+    const data = await response.json() as RecommendationResponse;
     return { ...data, source: "api" };
   },
 
   async similar(req: SimilarMovieRequest): Promise<RecommendationResponse> {
-    const limit = req.limit ?? 10;
-    if (IS_DEMO) {
-      await wait(700);
-      const base = DEMO_CATALOG.find((m) => m.id === req.movie_id);
-      if (!base) throw new ApiError("Movie not found in the demo catalog.", 404);
-      const recs = DEMO_CATALOG.filter((m) => m.id !== base.id)
-        .map((m) => ({ movie: m, overlap: genreOverlap(base, m) }))
-        .sort((a, b) => b.overlap - a.overlap)
-        .slice(0, limit)
-        .map(({ movie }) => ({ movie }));
-      return { source: "demo", recommendations: recs };
+    const base = (import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
+    if (!base) throw new ApiError("Set VITE_MOVIES_API_BASE_URL in .env.local to use the real Content-Based model.");
+    if (!req.movie_id) throw new ApiError("Please select a movie before requesting recommendations.");
+    const url = `${base}/api/movies/${req.movie_id}/similar?limit=${req.limit ?? 10}`;
+    const response = await fetch(url).catch(() => { throw new ApiError("Cannot reach FastAPI. Check port 8000."); });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new ApiError(typeof body?.detail === "string" ? body.detail : `Request failed (${response.status})`, response.status);
     }
-    const data = await request<RecommendationResponse>("/api/recommend/similar", {
-      method: "POST",
-      body: JSON.stringify({ ...req, limit }),
-    });
+    const data = await response.json() as RecommendationResponse;
     return { ...data, source: "api" };
   },
 };
+
+const MOVIES_BASE_URL = (
+  import.meta.env.VITE_MOVIES_API_BASE_URL || ""
+).replace(/\/$/, "");
+
+export interface MoviesPage {
+  page: number;
+  limit: number;
+  total: number;
+  hasNext: boolean;
+  movies: Movie[];
+}
+
+export async function fetchMovies(
+  page = 1,
+  limit = 12,
+  genre?: string
+): Promise<MoviesPage> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (genre) {
+    params.set("genre", genre);
+  }
+
+  if (!MOVIES_BASE_URL) {
+    throw new Error("Movies API URL is not configured");
+  }
+
+  const response = await fetch(
+    `${MOVIES_BASE_URL}/api/movies?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load movies");
+  }
+
+  return response.json();
+}

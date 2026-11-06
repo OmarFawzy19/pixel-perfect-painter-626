@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Clapperboard, Compass, Film, Play, Star } from "lucide-react";
+import { ArrowRight, Compass, Film, Play, Star } from "lucide-react";
 import hero from "@/assets/hero.jpg";
 import { Button } from "@/components/ui/button";
 import { MovieRow } from "@/components/MovieGrid";
 import { MovieCard } from "@/components/MovieCard";
-import { DEMO_CATALOG, DEMO_GENRES, FOR_YOU_IDS, TOP_RATED_IDS, TRENDING_IDS } from "@/lib/mock-data";
+import { DEMO_GENRES, FOR_YOU_IDS, TOP_RATED_IDS, TRENDING_IDS } from "@/lib/mock-data";
 import { useRecent } from "@/lib/library";
+import type { Movie } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,11 +22,21 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const byIds = (ids: number[]) => ids.map((id) => ({ movie: DEMO_CATALOG.find((m) => m.id === id)! }));
+// Use the separate movies API URL so the AI recommendation endpoints can stay in demo mode.
+const MOVIES_BASE_URL = (import.meta.env.VITE_MOVIES_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
 
-function HeroSection() {
-  const featured = byIds(TRENDING_IDS.slice(0, 2));
+async function getMovieById(movieId: number, signal: AbortSignal): Promise<Movie> {
+  if (!MOVIES_BASE_URL) {
+    throw new Error("VITE_MOVIES_API_BASE_URL is not configured in .env.local");
+  }
+  const response = await fetch(`${MOVIES_BASE_URL}/api/movies/${movieId}`, { signal });
+  if (!response.ok) throw new Error(`Movie ${movieId}: HTTP ${response.status}`);
+  return (await response.json()) as Movie;
+}
 
+const HOME_IDS = [...new Set([...TRENDING_IDS, ...TOP_RATED_IDS, ...FOR_YOU_IDS])];
+
+function HeroSection({ featured }: { featured: { movie: Movie }[] }) {
   return (
     <section className="relative flex min-h-[85vh] items-end overflow-hidden pb-16 pt-28 sm:min-h-[90vh]">
       <img
@@ -45,7 +57,7 @@ function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-md">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-foreground backdrop-blur-xl">
             <Film className="h-3.5 w-3.5 text-primary" />
             Curated Cinema Catalog
           </span>
@@ -60,14 +72,10 @@ function HeroSection() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <Button asChild variant="hero" size="xl">
-              <Link to="/discover">
-                <Play className="fill-current" /> Browse All Movies
-              </Link>
+              <Link to="/discover"><Play className="fill-current" /> Browse All Movies</Link>
             </Button>
             <Button asChild variant="glass" size="xl">
-              <Link to="/favorites">
-                <Star className="h-4 w-4" /> My Watchlist
-              </Link>
+              <Link to="/favorites"><Star className="h-4 w-4" /> My Watchlist</Link>
             </Button>
           </div>
 
@@ -89,7 +97,7 @@ function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Featured Showcase: 2 high-impact cards */}
+        {/* Featured Showcase: identical layout, real movie details from FastAPI. */}
         <div className="hidden grid-cols-2 gap-5 lg:grid">
           {featured.map((r, i) => (
             <motion.div
@@ -103,7 +111,7 @@ function HeroSection() {
                 <span className="flex items-center gap-1.5 text-primary">
                   <Compass className="h-3.5 w-3.5" /> Featured Pick
                 </span>
-                <span>#{i + 1} Trending</span>
+                <span>#{i + 1} Featured</span>
               </div>
               <MovieCard rec={r} />
             </motion.div>
@@ -116,43 +124,106 @@ function HeroSection() {
 
 function Home() {
   const recent = useRecent();
-  const recentItems = recent
-    .map((id) => DEMO_CATALOG.find((m) => m.id === id))
-    .filter(Boolean)
-    .map((m) => ({ movie: m! }));
+  const recentKey = recent.join(",");
+  const [movieMap, setMovieMap] = useState<Record<number, Movie>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    const requestedIds = [...new Set([...HOME_IDS, ...recentKey.split(",").filter(Boolean).map(Number)])];
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      const fetched: Record<number, Movie> = {};
+      let failures = 0;
+      try {
+        // Cap concurrent external requests. FastAPI may need to fetch/cache TMDB metadata.
+        for (let i = 0; i < requestedIds.length; i += 4) {
+          const batch = requestedIds.slice(i, i + 4);
+          const results = await Promise.allSettled(
+            batch.map((id) => getMovieById(id, controller.signal))
+          );
+          if (cancelled) return;
+          results.forEach((result, index) => {
+            if (result.status === "fulfilled") fetched[batch[index]] = result.value;
+            else failures++;
+          });
+          setMovieMap({ ...fetched });
+        }
+        if (!cancelled && failures > 0) {
+          setError(`${failures} movie${failures === 1 ? "" : "s"} could not be loaded.`);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load movies");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; controller.abort(); };
+  }, [recentKey, retry]);
+
+  const byIds = (ids: number[]) => ids
+    .map((id) => movieMap[id])
+    .filter((movie): movie is Movie => Boolean(movie))
+    .map((movie) => ({ movie }));
+
+  const featured = byIds(TRENDING_IDS.slice(0, 2));
+  const recentItems = useMemo(() => {
+    return recent.map((id) => movieMap[id])
+      .filter((movie): movie is Movie => Boolean(movie))
+      .map((movie) => ({ movie }));
+  }, [recentKey, movieMap]);
 
   return (
     <>
-      <HeroSection />
+      <HeroSection featured={featured} />
 
       <div className="mx-auto max-w-7xl space-y-20 px-4 sm:px-6 md:px-8 pb-20">
+        {loading && (
+          <p role="status" className="text-center text-sm text-muted-foreground">Loading movie posters...</p>
+        )}
+        {error && (
+          <div role="alert" className="flex flex-wrap items-center justify-center gap-3 text-sm text-destructive">
+            <span>{error}</span>
+            <Button type="button" variant="outline" onClick={() => setRetry((n) => n + 1)}>Try again</Button>
+          </div>
+        )}
+
         {recentItems.length > 0 && (
+          <MovieRow title="Continue Exploring" subtitle="Titles recently viewed on your device" items={recentItems} />
+        )}
+
+        {byIds(TRENDING_IDS).length > 0 && (
           <MovieRow
-            title="Continue Exploring"
-            subtitle="Titles recently viewed on your device"
-            items={recentItems}
+            title="Trending Now"
+            subtitle="Featured films from our curated catalog"
+            items={byIds(TRENDING_IDS)}
           />
         )}
 
-        <MovieRow
-          title="Trending Now"
-          subtitle="Popular films trending with viewers this week"
-          items={byIds(TRENDING_IDS)}
-        />
+        {byIds(TOP_RATED_IDS).length > 0 && (
+          <MovieRow
+            title="All-Time Classics"
+            subtitle="A collection of acclaimed films"
+            items={byIds(TOP_RATED_IDS)}
+          />
+        )}
 
-        <MovieRow
-          title="All-Time Classics"
-          subtitle="Consistently highest rated by global film enthusiasts"
-          items={byIds(TOP_RATED_IDS)}
-        />
+        {byIds(FOR_YOU_IDS).length > 0 && (
+          <MovieRow
+            title="Curated For You"
+            subtitle="Hand-picked titles across popular categories"
+            items={byIds(FOR_YOU_IDS)}
+          />
+        )}
 
-        <MovieRow
-          title="Curated For You"
-          subtitle="Specially selected titles across popular categories"
-          items={byIds(FOR_YOU_IDS)}
-        />
-
-        {/* Browse by Genre Section */}
+        {/* Browse by Genre: keep current navigation and styling. */}
         <section className="space-y-5">
           <div className="flex items-end justify-between">
             <div>

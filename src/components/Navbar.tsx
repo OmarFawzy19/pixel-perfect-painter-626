@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/", label: "Home" },
   { to: "/discover", label: "Discover" },
+  { to: "/recommend", label: "AI Recommendations" },
 ] as const;
 
 export function Navbar() {
