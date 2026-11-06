@@ -1,9 +1,11 @@
 """Inference adapter for the original Surprise SVD artifact (no retraining)."""
+import os
 from functools import lru_cache
 from pathlib import Path
 import joblib
 
-MODEL_PATH = Path(__file__).resolve().parent / 'models' / 'svd_model.pkl'
+ASSET_DIR = Path(os.getenv('CINEMATCH_ASSET_DIR', str(Path(__file__).resolve().parent)))
+MODEL_PATH = ASSET_DIR / 'models' / 'svd_model.pkl'
 
 
 @lru_cache(maxsize=1)

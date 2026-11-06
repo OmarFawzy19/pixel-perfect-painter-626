@@ -13,7 +13,7 @@ const PAGE_SIZE = 12;
 type SortMode = "title" | "new" | "old";
 
 export const Route = createFileRoute("/discover")({
-  validateSearch: (s: Record<string, unknown>): { genre?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { genre?: string | undefined } => ({
     genre: typeof s["genre"] === "string" ? s["genre"] : undefined,
   }),
   head: () => ({

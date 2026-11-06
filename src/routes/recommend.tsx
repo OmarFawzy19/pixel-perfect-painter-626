@@ -4,7 +4,7 @@ import { RecommendationPanel } from "@/components/RecommendationPanel";
 import type { Algorithm, Movie } from "@/lib/types";
 
 export const Route = createFileRoute("/recommend")({
-  validateSearch: (s: Record<string, unknown>): { mode?: Algorithm; movie?: number } => ({
+  validateSearch: (s: Record<string, unknown>): { mode?: Algorithm | undefined; movie?: number | undefined } => ({
     mode: s["mode"] === "svd" || s["mode"] === "als" || s["mode"] === "content" ? s["mode"] : undefined,
     movie: s["movie"] != null && Number.isInteger(Number(s["movie"])) && Number(s["movie"]) > 0
       ? Number(s["movie"]) : undefined,

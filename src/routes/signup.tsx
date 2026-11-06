@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Clapperboard, Eye, EyeOff, Lock, Mail, User as UserIcon, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { AUTH_ENABLED } from "@/lib/auth-policy";
+import { AccountsUnavailable } from "@/components/AccountsUnavailable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/signup")({
       { property: "og:title", content: "Sign Up — CineMatch" },
     ],
   }),
-  component: SignupPage,
+  component: AUTH_ENABLED ? SignupPage : AccountsUnavailable,
 });
 
 function SignupPage() {

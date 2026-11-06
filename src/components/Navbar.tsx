@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/lib/library";
 import { useAuth } from "@/lib/auth";
+import { AUTH_ENABLED } from "@/lib/auth-policy";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -100,7 +101,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop User Auth State */}
-          {user ? (
+          {AUTH_ENABLED && (user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -155,7 +156,7 @@ export function Navbar() {
                 <Link to="/signup">Sign Up</Link>
               </Button>
             </div>
-          )}
+          ))}
 
           {/* Mobile Menu Trigger */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -224,7 +225,7 @@ export function Navbar() {
 
               {/* Mobile Auth Actions */}
               <div className="border-t border-border/60 pt-4">
-                {user ? (
+                {AUTH_ENABLED && (user ? (
                   <Button
                     onClick={() => {
                       logout();
@@ -249,7 +250,7 @@ export function Navbar() {
                       </Link>
                     </Button>
                   </div>
-                )}
+                ))}
                 <p className="mt-4 text-center text-xs text-muted-foreground">
                   CineMatch · Curated Cinema Catalog
                 </p>

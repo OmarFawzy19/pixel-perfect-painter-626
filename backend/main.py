@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 import requests
@@ -11,11 +12,13 @@ from svd_service import recommend_svd
 from als_service import recommend_als
 from fastapi.middleware.cors import CORSMiddleware
 from model_service import recommend_similar
+from readiness import check_readiness
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-DB_PATH = BASE_DIR / "movies.db"
+ASSET_DIR = Path(os.getenv("CINEMATCH_ASSET_DIR", str(BASE_DIR)))
+DB_PATH = ASSET_DIR / "movies.db"
 TMDB_KEY = os.getenv("TMDB_API_KEY")
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
@@ -23,7 +26,7 @@ app = FastAPI(title="CineMatch API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+    allow_origins=[origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()] or [
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:5173",
@@ -31,14 +34,22 @@ app.add_middleware(
         "http://localhost:3000",
     ],
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type"],
 )
 
 
+@contextmanager
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=10)
+    # Do not silently create an empty database when the volume is unprovisioned.
+    if not DB_PATH.is_file():
+        raise HTTPException(status_code=503, detail="The movie catalog is not available yet.")
+    conn = sqlite3.connect(f"{DB_PATH.resolve().as_uri()}?mode=rw", uri=True, timeout=10)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def enrich_movie(row):
@@ -87,6 +98,13 @@ def enrich_movie(row):
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/ready")
+def ready():
+    from fastapi.responses import JSONResponse
+    report = check_readiness()
+    return JSONResponse(report, status_code=200 if report["ready"] else 503)
 
 
 @app.get("/api/movies/search")
@@ -159,7 +177,7 @@ def similar_movies(movie_id: int, limit: int = Query(default=10, ge=1, le=20)):
     except (FileNotFoundError, ValueError, ImportError) as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Content-based model could not be loaded: {exc}",
+            detail="The content-based model is not available yet.",
         ) from exc
 
     if ranked is None:
@@ -225,7 +243,7 @@ def user_recommendations(request: UserRecommendationRequest):
     except (FileNotFoundError, ValueError, ImportError, ModuleNotFoundError) as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"{request.algorithm.upper()} model unavailable: {exc}",
+            detail=f"The {request.algorithm.upper()} model is not available yet.",
         ) from exc
 
     if ranked is None:

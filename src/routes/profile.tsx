@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, PRESET_AVATARS } from "@/lib/auth";
+import { AUTH_ENABLED } from "@/lib/auth-policy";
+import { AccountsUnavailable } from "@/components/AccountsUnavailable";
 import { useFavorites } from "@/lib/library";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/profile")({
       { property: "og:title", content: "My Profile — CineMatch" },
     ],
   }),
-  component: ProfilePage,
+  component: AUTH_ENABLED ? ProfilePage : AccountsUnavailable,
 });
 
 function ProfilePage() {
@@ -92,7 +94,7 @@ function ProfilePage() {
         name: name.trim(),
         email: email.trim(),
         bio: bio.trim(),
-        avatarUrl: avatarUrl.trim() || undefined,
+        ...(avatarUrl.trim() ? { avatarUrl: avatarUrl.trim() } : {}),
       });
       if (res.success) {
         toast.success("Profile updated successfully!");

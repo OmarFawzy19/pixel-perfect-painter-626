@@ -47,6 +47,15 @@ backend/data/
 
 # AI Models
 backend/models/
+*.pkl
+*.npz
+*.parquet
+*.csv
+*.sqlite*
+*.db
+*.db-*
+*.zip
+*.tar.gz
 
 # Temporary files
 *.before-ai.bak
