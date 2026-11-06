@@ -52,3 +52,5 @@ backend/models/
 *.before-ai.bak
 *.before-als.bak
 connect_recommendations.py
+# Large datasets
+backend/*.zip
