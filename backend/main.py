@@ -15,7 +15,8 @@ from model_service import recommend_similar
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-DB_PATH = BASE_DIR / "movies.db"
+ASSET_DIR = Path(os.getenv("CINEMATCH_ASSET_DIR", str(BASE_DIR)))
+DB_PATH = ASSET_DIR / "movies.db"
 TMDB_KEY = os.getenv("TMDB_API_KEY")
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
@@ -29,6 +30,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
+        *[origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()],
     ],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
