@@ -4,6 +4,7 @@ No retraining or changes to the TF-IDF model.
 Requires backend/data/tmdb_5000_movies.csv and backend/data/tmdb_5000_credits.csv
 (the same exact source files used to train the notebook).
 """
+import os
 from functools import lru_cache
 from pathlib import Path
 import sqlite3
@@ -15,9 +16,10 @@ from scipy.sparse import load_npz
 from sklearn.metrics.pairwise import cosine_similarity
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_DIR = BASE_DIR / "models"
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = BASE_DIR / "movies.db"
+ASSET_DIR = Path(os.getenv("CINEMATCH_ASSET_DIR", str(BASE_DIR)))
+MODEL_DIR = ASSET_DIR / "models"
+DATA_DIR = ASSET_DIR / "data"
+DB_PATH = ASSET_DIR / "movies.db"
 
 
 @lru_cache(maxsize=1)
