@@ -9,10 +9,11 @@ import {
   type UserRecommendationRequest,
 } from "./types";
 
-const BASE = (import.meta.env['VITE_API_BASE_URL'] as string | undefined)?.replace(/\/$/, "");
-export const IS_DEMO = !BASE;
+const BASE = ((import.meta.env.VITE_MOVIES_API_BASE_URL || import.meta.env.VITE_API_BASE_URL) as string | undefined)?.replace(/\/$/, "");
+export const IS_DEMO = !import.meta.env.PROD && !BASE;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!BASE) throw new ApiError("The movie service is not configured yet.");
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {

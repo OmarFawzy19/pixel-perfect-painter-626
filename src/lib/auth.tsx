@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { AUTH_ENABLED } from "./auth-policy";
 
 export interface User {
   id: string;
@@ -137,7 +138,7 @@ async function seedDefaultUserIfEmpty() {
       id: "usr_demo_alex",
       name: "Alex Morgan",
       email: "alex@cinematch.com",
-      avatarUrl: PRESET_AVATARS[0].url,
+      avatarUrl: PRESET_AVATARS[0]!.url,
       bio: "Film buff, classic cinema enthusiast, and avid sci-fi collector.",
       salt,
       passwordHash,
@@ -155,6 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const syncCurrentUser = useCallback(() => {
+    if (!AUTH_ENABLED) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
     const session = getStoredSession();
     if (!session) {
       setUser(null);
@@ -174,6 +180,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!AUTH_ENABLED) {
+      setIsLoading(false);
+      return;
+    }
     seedDefaultUserIfEmpty().then(() => {
       syncCurrentUser();
     });
@@ -189,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [syncCurrentUser]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!AUTH_ENABLED) return { success: false, error: "Accounts are not available yet." };
     const normalizedEmail = email.trim().toLowerCase();
     const users = getStoredUsers();
     const found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
@@ -215,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!AUTH_ENABLED) return { success: false, error: "Accounts are not available yet." };
     const trimmedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -238,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
     // Pick an avatar preset based on name length
-    const avatarPreset = PRESET_AVATARS[trimmedName.length % PRESET_AVATARS.length].url;
+    const avatarPreset = PRESET_AVATARS[trimmedName.length % PRESET_AVATARS.length]!.url;
 
     const newUser: StoredUser = {
       id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -294,12 +306,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    const stored = users[index];
+    if (!stored) return { success: false, error: "User not found" };
     const updatedStoredUser: StoredUser = {
-      ...users[index],
-      name: data.name !== undefined ? data.name.trim() : users[index].name,
-      email: data.email !== undefined ? data.email.trim().toLowerCase() : users[index].email,
-      bio: data.bio !== undefined ? data.bio.trim() : users[index].bio,
-      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl.trim() : users[index].avatarUrl,
+      ...stored,
+      name: data.name !== undefined ? data.name.trim() : stored.name,
+      email: data.email !== undefined ? data.email.trim().toLowerCase() : stored.email,
+      ...(data.bio !== undefined ? { bio: data.bio.trim() } : {}),
+      ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl.trim() } : {}),
       updatedAt: new Date().toISOString(),
     };
 
@@ -325,6 +339,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (index === -1) return { success: false, error: "User not found" };
 
     const stored = users[index];
+    if (!stored) return { success: false, error: "User not found" };
     const currentHash = await hashPassword(currentPassword, stored.salt);
     if (currentHash !== stored.passwordHash) {
       return { success: false, error: "Current password is incorrect." };

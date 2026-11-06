@@ -148,8 +148,8 @@ function Home() {
             batch.map((id) => getMovieById(id, controller.signal))
           );
           if (cancelled) return;
-          results.forEach((result, index) => {
-            if (result.status === "fulfilled") fetched[batch[index]] = result.value;
+          results.forEach((result) => {
+            if (result.status === "fulfilled") fetched[result.value.id] = result.value;
             else failures++;
           });
           setMovieMap({ ...fetched });
